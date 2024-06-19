@@ -1,0 +1,165 @@
+Global:
+  label_list: "datasets/enjp/label_list.txt"  # Add a new category file
+  num_classes: 3       # Add a new classification parameter (the total number of categories in label_list)
+  debug: false
+  use_gpu: true
+  epoch_num: 1000
+  log_smooth_window: 20
+  print_batch_step: 50
+  save_model_dir: ./checkpoints/enjp/det_r50_db++_ft20240313/
+  save_epoch_step: 1
+  eval_batch_step: 200
+  cal_metric_during_train: false
+  pretrained_model: ./pretrained/det_r50_db++_icdar15_train/ResNet50_dcn_asf_synthtext_pretrained
+  checkpoints: null
+  save_inference_dir: null
+  use_visualdl: false
+  infer_img: datasets/enjp/valid/images/
+  save_res_path: ./output/enjp/det_r50_db++_ft20240313/predicts_db.txt
+Architecture:
+  model_type: det
+  algorithm: DB++
+  Transform: null
+  Backbone:
+    name: ResNet
+    layers: 50
+    dcn_stage: [False, True, True, True]
+  Neck:
+    name: DBFPN
+    out_channels: 256
+    use_asf: True
+  Head:
+    name: DBHead
+    k: 50
+Loss:
+  name: DBLoss
+  balance_loss: true
+  main_loss_type: BCELoss
+  alpha: 5
+  beta: 10
+  ohem_ratio: 3
+Optimizer:
+  name: Momentum
+  momentum: 0.9
+  lr:
+    name: DecayLearningRate
+    learning_rate: 0.0004
+    epochs: 1000
+    factor: 0.9
+    end_lr: 0
+  weight_decay: 0.0001
+PostProcess:
+  name: DBPostProcess
+  thresh: 0.3
+  box_thresh: 0.5
+  max_candidates: 1000
+  unclip_ratio: 1.5
+  det_box_type: 'quad' # 'quad' or 'poly'
+Metric:
+  name: DetMetric
+  main_indicator: hmean
+Train:
+  dataset:
+    name: SimpleDataSet
+    data_dir: ./datasets/enjp/train/
+    label_file_list:                                                                                            
+    - ./datasets/enjp/train/train.txt
+    ratio_list:                                                                                                 
+    - 1.0 
+    transforms:
+    - DecodeImage:
+        img_mode: BGR
+        channel_first: false
+    - DetLabelEncode: null
+    - IaaAugment:
+        augmenter_args:
+        - type: Fliplr
+          args:
+            p: 0.5
+        - type: Affine
+          args:
+            rotate:
+            - -10
+            - 10
+        - type: Resize
+          args:
+            size:
+            - 0.5
+            - 3
+    - EastRandomCropData:
+        size:
+        - 1280
+        - 1280
+        max_tries: 10
+        keep_ratio: true
+    - MakeShrinkMap:
+        shrink_ratio: 0.4
+        min_text_size: 8
+    - MakeBorderMap:
+        shrink_ratio: 0.4
+        thresh_min: 0.3
+        thresh_max: 0.7
+    - NormalizeImage:
+        scale: 1./255.
+        mean:
+        - 0.48109378172549
+        - 0.45752457890196
+        - 0.40787054090196
+        std:
+        - 1.0
+        - 1.0
+        - 1.0
+        order: hwc
+    - ToCHWImage: null
+    - KeepKeys:
+        keep_keys:
+        - image
+        - threshold_map
+        - threshold_mask
+        - shrink_map
+        - shrink_mask
+        - class_mask
+  loader:
+    shuffle: true
+    drop_last: false
+    batch_size_per_card: 4
+    num_workers: 4
+Eval:
+  dataset:
+    name: SimpleDataSet
+    data_dir: ./datasets/enjp/valid/
+    label_file_list:                                                                                            
+      - ./datasets/enjp/valid/test.txt
+    transforms:
+    - DecodeImage:
+        img_mode: BGR
+        channel_first: false
+    - DetLabelEncode: null
+    - DetResizeForTest:
+        image_shape:
+        - 1280
+        - 1280
+    - NormalizeImage:
+        scale: 1./255.
+        mean:
+        - 0.48109378172549
+        - 0.45752457890196
+        - 0.40787054090196
+        std:
+        - 1.0
+        - 1.0
+        - 1.0
+        order: hwc
+    - ToCHWImage: null
+    - KeepKeys:
+        keep_keys:
+        - image
+        - shape
+        - polys
+        - ignore_tags
+  loader:
+    shuffle: false
+    drop_last: false
+    batch_size_per_card: 1
+    num_workers: 2
+profiler_options: null
