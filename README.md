@@ -36,7 +36,8 @@ pip install -r requirements.txt
 - Multilingual text detection and classification
 <div align="center">
     <img src="doc/drawBox/1.jpg" width="600">
-</div>
+</div>   
+
 - Printed and handwritten text detection and classification
 <div align="center">
     <img src="doc/drawBox/2.jpg" width="600">
