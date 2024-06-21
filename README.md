@@ -42,3 +42,6 @@ pip install -r requirements.txt
 <div align="center">
     <img src="doc/drawBox/2.jpg" width="600">
 </div>
+
+### Acknowledgment
+This code is based on the [PaddleOCR](https://github.com/yangy996/PaddleOCR). Thanks to the contributors of this project.
